@@ -1,3 +1,6 @@
+# script to test mediapipe hand tracking 
+# to run, simply install opencv and mediapipe via pip
+
 import cv2
 import mediapipe as mp
 import time
