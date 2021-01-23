@@ -1,6 +1,3 @@
-# script to test mediapipe hand tracking 
-# to run, simply install opencv and mediapipe via pip
-
 import cv2
 import mediapipe as mp
 import time
@@ -24,11 +21,9 @@ while cap.isOpened():
   # To improve performance, optionally mark the image as not writeable to
   # pass by reference.
   image.flags.writeable = False
+  # result contains landmarks of hands and classification if hand is left or right
   results = hands.process(image)
-  print('#######BEGIN########')
-  print(results.multi_hand_landmarks)
-  print('########END#######')
-  time.sleep(3)
+  # TODO: Algorithm for gesture recognition
 
   # Draw the hand annotations on the image.
   image.flags.writeable = True
