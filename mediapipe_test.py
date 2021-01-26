@@ -25,28 +25,32 @@ while cap.isOpened():
   image.flags.writeable = False
   # result contains landmarks of hands and classification if hand is left or right
   results = hands.process(image)
-  # TODO: Algorithm for gesture recognition
+
+  # GESTURE RECOGNITION
   if results.multi_hand_landmarks:
     landmarklist = results.multi_hand_landmarks[0]
+    # we look at hand position every fourth frame for efficiency
     if framecounter % 4 == 0:
       #wrist = landmarklist.landmark[0]
       mcp_middle_finger = landmarklist.landmark[9]
 
+      # hand is approx. in the middle of the image
       if mcp_middle_finger.x > 0.4 and mcp_middle_finger.x < 0.6:
         cnt += 1
+        # if hand was in the middle for a certain time, determine if it was moved to left or right
       else:
-        if cnt > 1:
+        if cnt > 1: # threshold could be further increased to prevent mismatches
+          # TODO: give feedback to user that hand was detected in the middle
           if mcp_middle_finger.x >= 0.6:
             print('###########RIGHT###########')
+            # TODO: call ahk action
           elif mcp_middle_finger.x <= 0.4:
             print('###########LEFT###########')
+            # TODO: call ahk action
           cnt = 0
 
 
       print(cnt)
-
-
-
 
   # Draw the hand annotations on the image.
   image.flags.writeable = True
