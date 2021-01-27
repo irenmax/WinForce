@@ -1,9 +1,26 @@
 import cv2
 import mediapipe as mp
+from ahk import AHK
+from ahk.window import Window
 import time
 mp_drawing = mp.solutions.drawing_utils
 mp_hands = mp.solutions.hands
+ahk = AHK()
 from mediapipe.framework.formats import landmark_pb2
+
+ahk.run_script('Run Notepad')
+win = ahk.active_window
+def winMin():
+  win.minimize()
+
+def winMax():
+  win.maximize()
+
+def winRight():
+  win.move(x=1920, y=0, width=1920, height=2160)
+
+def winLeft():
+  win.move(x=0, y=0, width=1920, height=2160)
 
 # For webcam input:
 hands = mp_hands.Hands(
@@ -43,9 +60,11 @@ while cap.isOpened():
           # TODO: give feedback to user that hand was detected in the middle
           if mcp_middle_finger.x >= 0.6:
             print('###########RIGHT###########')
+            winRight()
             # TODO: call ahk action
           elif mcp_middle_finger.x <= 0.4:
             print('###########LEFT###########')
+            winLeft()
             # TODO: call ahk action
           cnt = 0
 
