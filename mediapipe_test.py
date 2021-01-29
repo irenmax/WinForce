@@ -6,25 +6,35 @@ import time
 mp_drawing = mp.solutions.drawing_utils
 mp_hands = mp.solutions.hands
 ahk = AHK()
-from mediapipe.framework.formats import landmark_pb2
 
-ahk.run_script('Run Notepad')
-win = ahk.active_window
+#ahk.run_script('Run Notepad')
+#win = ahk.active_window
 def winMin():
+  win = ahk.active_window
   win.minimize()
 
 def winMax():
+  win = ahk.active_window
   win.maximize()
 
 def winRight():
-  win.move(x=1920, y=0, width=1920, height=2160)
+  #win = ahk.active_window
+  #win.move(x=1920, y=0, width=1920, height=2160)
+  ahk.send_input('{LWin Down}{Right}{LWin Up}')
+  time.sleep(0.1)
+  ahk.key_press('Escape')
 
 def winLeft():
-  win.move(x=0, y=0, width=1920, height=2160)
+  #win = ahk.active_window
+  #win.move(x=0, y=0, width=1920, height=2160)
+  ahk.send_input('{LWin Down}{Left}{LWin Up}')
+  time.sleep(0.1)
+  ahk.key_press('Escape')
+
 
 # For webcam input:
 hands = mp_hands.Hands(
-    min_detection_confidence=0.5, min_tracking_confidence=0.5)
+    min_detection_confidence=0.7, min_tracking_confidence=0.7)
 cap = cv2.VideoCapture(0)
 framecounter = 0
 cnt = 0
@@ -39,8 +49,8 @@ while cap.isOpened():
   image = cv2.cvtColor(cv2.flip(image, 1), cv2.COLOR_BGR2RGB)
   # To improve performance, optionally mark the image as not writeable to
   # pass by reference.
-  image.flags.writeable = False
   # result contains landmarks of hands and classification if hand is left or right
+  image.flags.writeable = False
   results = hands.process(image)
 
   # GESTURE RECOGNITION
@@ -61,16 +71,12 @@ while cap.isOpened():
           if mcp_middle_finger.x >= 0.6:
             print('###########RIGHT###########')
             winRight()
-            # TODO: call ahk action
           elif mcp_middle_finger.x <= 0.4:
             print('###########LEFT###########')
             winLeft()
-            # TODO: call ahk action
           cnt = 0
 
-
       print(cnt)
-
   # Draw the hand annotations on the image.
   image.flags.writeable = True
   image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
