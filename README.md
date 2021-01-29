@@ -5,6 +5,7 @@ Gesture window control for PR Building Interaction Interfaces
 - Python 3.8
 - [Autohotkey](https://www.autohotkey.com/)
 - Python packages
+  - PySimpleGUI
   - ahk
   - mediapipe
   - opencv-python
