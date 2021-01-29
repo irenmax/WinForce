@@ -1,4 +1,5 @@
 import cv2
+import beepy
 import mediapipe as mp
 from ahk import AHK
 from ahk.window import Window
@@ -65,15 +66,22 @@ while cap.isOpened():
       if mcp_middle_finger.x > 0.4 and mcp_middle_finger.x < 0.6:
         cnt += 1
         # if hand was in the middle for a certain time, determine if it was moved to left or right
+        if cnt > 3:
+          beepy.beep(sound=1)
       else:
         if cnt > 1: # threshold could be further increased to prevent mismatches
-          # TODO: give feedback to user that hand was detected in the middle
-          if mcp_middle_finger.x >= 0.6:
-            print('###########RIGHT###########')
-            winRight()
-          elif mcp_middle_finger.x <= 0.4:
-            print('###########LEFT###########')
-            winLeft()
+          win = ahk.active_window
+          print(win.title)
+
+          # only trigger left or right snap if focused window is not the camera preview
+          # snaping the camera preview causes crash
+          if(win.title != b'Hand Preview'):
+            if mcp_middle_finger.x >= 0.6:
+              print('###########RIGHT###########')
+              winRight()
+            elif mcp_middle_finger.x <= 0.4:
+              print('###########LEFT###########')
+              winLeft()
           cnt = 0
 
       print(cnt)
@@ -84,7 +92,7 @@ while cap.isOpened():
     for hand_landmarks in results.multi_hand_landmarks:
       mp_drawing.draw_landmarks(
           image, hand_landmarks, mp_hands.HAND_CONNECTIONS)
-  cv2.imshow('MediaPipe Hands', image)
+  cv2.imshow('Hand Preview', image)
   if cv2.waitKey(5) & 0xFF == 27:
     break
 hands.close()
