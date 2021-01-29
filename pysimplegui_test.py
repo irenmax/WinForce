@@ -7,9 +7,30 @@ import beepy
 from ahk import AHK
 from ahk.window import Window
 import time
+import winsound
+from threading import Thread
 mp_drawing = mp.solutions.drawing_utils
 mp_hands = mp.solutions.hands
 ahk = AHK()
+
+
+threshold_middleduration = 3
+middle_left = 0.4
+middle_right = 0.6
+middle_up = 0.4
+middle_bottom = 0.6
+
+
+# thread that plays sound
+class beeper(Thread):
+  def run(self):
+    print('start beeper')
+    self.playsound = False # plays sound as long as True
+    self.keeprunning = True # thread is stopped if set to False
+    while self.keeprunning:
+      if self.playsound:
+        beepy.beep(sound=1)
+    print('stop beeper')
 
 def winRight():
   #win = ahk.active_window
@@ -37,6 +58,8 @@ def winDown():
 
 
 def main():
+    beep = beeper()
+    beep.daemon = True
     hands = mp_hands.Hands(
         min_detection_confidence=0.7, min_tracking_confidence=0.7)
     sg.theme('Black')
@@ -50,17 +73,25 @@ def main():
 
     # create the window and show it without the plot
     window = sg.Window('Demo Application - OpenCV Integration',
-                       layout, location=(800, 400), keep_on_top=True, re)
+                       layout, location=(800, 400), keep_on_top=True)
 
     # ---===--- Event LOOP Read and display frames, operate the GUI --- #
     cap = cv2.VideoCapture(0)
     recording = False
     framecounter = 0
-    cnt = 0
+    cnt_x = 0
+    cnt_y = 0
+    cnt_none = 0
+    beeping = False
+    # start sound thread
+    beep.start()
     while True:
         event, values = window.read(timeout=20)
         if event == 'Exit' or event == sg.WIN_CLOSED:
-            return
+          beep.keeprunning = False # kill sound thread
+          hands.close()
+          cap.release()
+          return
 
         elif event == 'Record':
             recording = True
@@ -71,10 +102,10 @@ def main():
             # this is faster, shorter and needs less includes
             imgbytes = cv2.imencode('.png', img)[1].tobytes()
             window['image'].update(data=imgbytes)
+            beep.keeprunning
 
         if recording:
             ret, image = cap.read()
-
             framecounter += 1
             # Flip the image horizontally for a later selfie-view display, and convert
             # the BGR image to RGB.
@@ -86,46 +117,70 @@ def main():
             results = hands.process(image)
 
             # GESTURE RECOGNITION
-
-            if results.multi_hand_landmarks:
-              landmarklist = results.multi_hand_landmarks[0]
-              # we look at hand position every fourth frame for efficiency
-              if framecounter % 4 == 0:
+            # we look at hand position every fourth frame for efficiency
+            if framecounter % 2 == 0:
+              if results.multi_hand_landmarks:
+                cnt_none = 0
+                landmarklist = results.multi_hand_landmarks[0]
+                
                 #wrist = landmarklist.landmark[0]
                 mcp_middle_finger = landmarklist.landmark[9]
 
                 # hand is approx. in the middle of the image
-                if mcp_middle_finger.x > 0.4 and mcp_middle_finger.x < 0.6 and mcp_middle_finger.y > 0.4 and mcp_middle_finger.y < 0.6:
-                  cnt += 1
-                  # if hand was in the middle for a certain time, determine if it was moved to left or right
-                  #if cnt > 3:
-                    #beepy.beep(sound=1)
-                else:
-                  if cnt > 3: # threshold could be further increased to prevent mismatches
-                    #win = ahk.active_window
-                    #print(win.title)
+                # check left or right 
+                if mcp_middle_finger.x > middle_left and mcp_middle_finger.x < middle_right:
+                  cnt_x += 1
 
-                    # only trigger left or right snap if focused window is not the camera preview
-                    # snaping the camera preview causes crash
+                  if cnt_x > threshold_middleduration:
+                    #winsound.PlaySound("nudge", winsound.SND_ALIAS|winsound.SND_ASYNC)
+                    if not beeping:
+                      beep.playsound = True
+                      beeping = True
+                                  
+                elif cnt_x > threshold_middleduration:
+                  if beeping:
+                    beep.playsound = False
+                    beeping = False
+                  if mcp_middle_finger.x >= middle_right:
+                    print('###########RIGHT###########')
+                    winRight()
+                  if mcp_middle_finger.x <= middle_left:
+                    print('###########LEFT###########')
+                    winLeft()
+                  cnt_x = 0
 
-                    if mcp_middle_finger.x >= 0.6:
-                      print('###########RIGHT###########')
-                      winRight()
-                    elif mcp_middle_finger.x <= 0.4:
-                      print('###########LEFT###########')
-                      winLeft()
-                    elif mcp_middle_finger.y >= 0.6:
-                      print('###########DOWN###########')
-                      winDown()
-                    elif mcp_middle_finger.y <= 0.4:
-                      print('###########UP###########')
-                      winUp()
-                    cnt = 0
+                if mcp_middle_finger.y > middle_up and mcp_middle_finger.y < middle_bottom:
+                  cnt_y += 1
+                  
+                  if cnt_y > threshold_middleduration:
+                    if not beeping: 
+                      beep.playsound = True
+                      beeping = True
 
-                print(cnt)
-            else:
-                #TODO: counter for hand not detected -> reset cnt if hand was not detected for x frames
-              cnt = 0
+                elif cnt_y > threshold_middleduration:
+                  if beeping:
+                    beep.playsound = False
+                    beeping = False
+                  if mcp_middle_finger.y <= middle_up:
+                    print('###########UP###########')
+                    winUp()
+                  if mcp_middle_finger.y >= middle_bottom:
+                    print('###########DOWN###########')
+                    winDown()
+                  cnt_y = 0
+
+                  
+              else:
+                cnt_none += 1
+                if cnt_none > 2:
+                  cnt_x = 0
+                  cnt_y = 0
+                  if beeping:
+                    beep.playsound = False
+                    beeping = False
+
+              #print(cnt_x, cnt_y, cnt_none)
+
             # Draw the hand annotations on the image.
             image.flags.writeable = True
             image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
@@ -157,7 +212,6 @@ def main():
 
             imgbytes = cv2.imencode('.png', image)[1].tobytes()  # ditto
             window['image'].update(data=imgbytes)
-
 
 
     hands.close()
