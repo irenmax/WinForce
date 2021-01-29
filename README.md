@@ -7,3 +7,4 @@ Gesture window control for PR Building Interaction Interfaces
   - ahk
   - mediapipe
   - opencv-python
+  - beepy
