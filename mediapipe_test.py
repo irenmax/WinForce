@@ -32,6 +32,12 @@ def winLeft():
   time.sleep(0.1)
   ahk.key_press('Escape')
 
+def winUp():
+  ahk.send_input('{LWin Down}{Up}{LWin Up}')
+
+def winDown():
+  ahk.send_input('{LWin Down}{Down}{LWin Up}')
+
 
 # For webcam input:
 hands = mp_hands.Hands(
@@ -63,13 +69,13 @@ while cap.isOpened():
       mcp_middle_finger = landmarklist.landmark[9]
 
       # hand is approx. in the middle of the image
-      if mcp_middle_finger.x > 0.4 and mcp_middle_finger.x < 0.6:
+      if mcp_middle_finger.x > 0.4 and mcp_middle_finger.x < 0.6 and mcp_middle_finger.y > 0.4 and mcp_middle_finger.y < 0.6:
         cnt += 1
         # if hand was in the middle for a certain time, determine if it was moved to left or right
         if cnt > 3:
           beepy.beep(sound=1)
       else:
-        if cnt > 1: # threshold could be further increased to prevent mismatches
+        if cnt > 3: # threshold could be further increased to prevent mismatches
           win = ahk.active_window
           print(win.title)
 
@@ -82,6 +88,12 @@ while cap.isOpened():
             elif mcp_middle_finger.x <= 0.4:
               print('###########LEFT###########')
               winLeft()
+            elif mcp_middle_finger.y >= 0.6:
+              print('###########DOWN###########')
+              winDown()
+            elif mcp_middle_finger.y <= 0.4:
+              print('###########UP###########')
+              winUp()
           cnt = 0
 
       print(cnt)
