@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from _thread import start_new_thread
 import PySimpleGUI as sg
 import cv2
 import numpy as np
@@ -10,6 +11,10 @@ import time
 mp_drawing = mp.solutions.drawing_utils
 mp_hands = mp.solutions.hands
 # ahk = AHK()
+
+
+def boop():
+    beepy.beep(sound=1)
 
 
 def calc_initial_coordinates(cap):
@@ -39,8 +44,8 @@ def make_mini_window(pos, start_value):
     emoji = sg.Text(start_value, font='Helvetica 40', enable_events=True)
     mini_layout = [[emoji]]
     return emoji, sg.Window('Gesture control', mini_layout, location=pos, alpha_channel=.7,
-                     background_color=None, grab_anywhere=True, no_titlebar=True, keep_on_top=True,
-                     finalize=True)
+                            background_color=None, grab_anywhere=True, no_titlebar=True,
+                            keep_on_top=True, finalize=True)
 
 
 def main():
@@ -124,7 +129,8 @@ def main():
 
                     # if hand was in the middle for a certain time, determine if it was moved to left or right
                     if cnt == 3:
-                        beepy.beep(sound=1)
+                        start_new_thread(boop, ())
+                        # beepy.beep(1)
                         emoji.Update(value=emoji_list['detecting'])
                 else:
                     if cnt >= 3:  # threshold could be further increased to prevent mismatches
