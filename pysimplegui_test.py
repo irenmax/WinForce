@@ -3,7 +3,6 @@ import PySimpleGUI as sg
 import cv2
 import numpy as np
 import mediapipe as mp
-import beepy
 from ahk import AHK
 from ahk.window import Window
 import time
@@ -13,24 +12,26 @@ mp_drawing = mp.solutions.drawing_utils
 mp_hands = mp.solutions.hands
 ahk = AHK()
 
-
+soundpath="C:/Windows/Media/"
 threshold_middleduration = 3
 middle_left = 0.4
 middle_right = 0.6
 middle_up = 0.4
 middle_bottom = 0.6
 
+def play_sound(sound):
+  soundfile = soundpath;
+  if sound == 1:
+    soundfile = soundfile + 'chimes.wav'
+  elif sound == 2:
+    soundfile = soundfile + 'ding.wav'
+  elif sound == 3:
+    soundfile = soundfile + 'chord.wav'
+  else: 
+    soundfile = soundfile + 'tada.wav'
 
-# thread that plays sound
-class beeper(Thread):
-  def run(self):
-    print('start beeper')
-    self.playsound = False # plays sound as long as True
-    self.keeprunning = True # thread is stopped if set to False
-    while self.keeprunning:
-      if self.playsound:
-        beepy.beep(sound=1)
-    print('stop beeper')
+  #winsound.PlaySound(soundfile, winsound.SND_FILENAME|winsound.SND_ASYNC)
+  winsound.PlaySound(soundfile, winsound.SND_ALIAS|winsound.SND_ASYNC)
 
 def winRight():
   #win = ahk.active_window
@@ -58,8 +59,6 @@ def winDown():
 
 
 def main():
-    beep = beeper()
-    beep.daemon = True
     hands = mp_hands.Hands(
         min_detection_confidence=0.7, min_tracking_confidence=0.7)
     sg.theme('Black')
@@ -82,13 +81,10 @@ def main():
     cnt_x = 0
     cnt_y = 0
     cnt_none = 0
-    beeping = False
-    # start sound thread
-    beep.start()
+
     while True:
         event, values = window.read(timeout=20)
         if event == 'Exit' or event == sg.WIN_CLOSED:
-          beep.keeprunning = False # kill sound thread
           hands.close()
           cap.release()
           return
@@ -102,7 +98,6 @@ def main():
             # this is faster, shorter and needs less includes
             imgbytes = cv2.imencode('.png', img)[1].tobytes()
             window['image'].update(data=imgbytes)
-            beep.keeprunning
 
         if recording:
             ret, image = cap.read()
@@ -131,16 +126,11 @@ def main():
                 if mcp_middle_finger.x > middle_left and mcp_middle_finger.x < middle_right:
                   cnt_x += 1
 
-                  if cnt_x > threshold_middleduration:
+                  if cnt_x == threshold_middleduration:
                     #winsound.PlaySound("nudge", winsound.SND_ALIAS|winsound.SND_ASYNC)
-                    if not beeping:
-                      beep.playsound = True
-                      beeping = True
+                    play_sound(1)
                                   
                 elif cnt_x > threshold_middleduration:
-                  if beeping:
-                    beep.playsound = False
-                    beeping = False
                   if mcp_middle_finger.x >= middle_right:
                     print('###########RIGHT###########')
                     winRight()
@@ -152,15 +142,10 @@ def main():
                 if mcp_middle_finger.y > middle_up and mcp_middle_finger.y < middle_bottom:
                   cnt_y += 1
                   
-                  if cnt_y > threshold_middleduration:
-                    if not beeping: 
-                      beep.playsound = True
-                      beeping = True
+                  if cnt_y == threshold_middleduration:
+                    play_sound(2)
 
                 elif cnt_y > threshold_middleduration:
-                  if beeping:
-                    beep.playsound = False
-                    beeping = False
                   if mcp_middle_finger.y <= middle_up:
                     print('###########UP###########')
                     winUp()
@@ -173,13 +158,12 @@ def main():
               else:
                 cnt_none += 1
                 if cnt_none > 2:
+                  if cnt_x > 0 or cnt_y > 0:
+                    play_sound(3)
                   cnt_x = 0
                   cnt_y = 0
-                  if beeping:
-                    beep.playsound = False
-                    beeping = False
 
-              #print(cnt_x, cnt_y, cnt_none)
+              print(cnt_x, cnt_y, cnt_none)
 
             # Draw the hand annotations on the image.
             image.flags.writeable = True
@@ -210,7 +194,7 @@ def main():
 
 
 
-            imgbytes = cv2.imencode('.png', image)[1].tobytes()  # ditto
+            imgbytes = cv2.imencode('.png', image)[1].tobytes()
             window['image'].update(data=imgbytes)
 
 
