@@ -37,37 +37,42 @@ emoji_list = {
 
 
 def play_sound(sound):
-    #winsound.PlaySound(soundfile, winsound.SND_FILENAME|winsound.SND_ASYNC)
-    winsound.PlaySound(
-        soundpath + soundfiles[sound - 1], winsound.SND_ALIAS | winsound.SND_ASYNC)
+    if is_windows:
+        #winsound.PlaySound(soundfile, winsound.SND_FILENAME|winsound.SND_ASYNC)
+        winsound.PlaySound(
+            soundpath + soundfiles[sound - 1], winsound.SND_ALIAS | winsound.SND_ASYNC)
 
 
 def winRight():
-    #win = ahk.active_window
-    #win.move(x=1920, y=0, width=1920, height=2160)
-    ahk.send_input('{LWin Down}{Right}{LWin Up}')
-    time.sleep(0.2)
-    ahk.key_press('Escape')
+    if is_windows:
+        #win = ahk.active_window
+        #win.move(x=1920, y=0, width=1920, height=2160)
+        ahk.send_input('{LWin Down}{Right}{LWin Up}')
+        time.sleep(0.2)
+        ahk.key_press('Escape')
 
 
 def winLeft():
-    #win = ahk.active_window
-    #win.move(x=0, y=0, width=1920, height=2160)
-    ahk.send_input('{LWin Down}{Left}{LWin Up}')
-    time.sleep(0.2)
-    ahk.key_press('Escape')
+    if is_windows:
+        #win = ahk.active_window
+        #win.move(x=0, y=0, width=1920, height=2160)
+        ahk.send_input('{LWin Down}{Left}{LWin Up}')
+        time.sleep(0.2)
+        ahk.key_press('Escape')
 
 
 def winUp():
-    ahk.send_input('{LWin Down}{Up}{LWin Up}')
-    time.sleep(0.2)
-    ahk.key_press('Escape')
+    if is_windows:
+        ahk.send_input('{LWin Down}{Up}{LWin Up}')
+        time.sleep(0.2)
+        ahk.key_press('Escape')
 
 
 def winDown():
-    ahk.send_input('{LWin Down}{Down}{LWin Up}')
-    time.sleep(0.2)
-    ahk.key_press('Escape')
+    if is_windows:
+        ahk.send_input('{LWin Down}{Down}{LWin Up}')
+        time.sleep(0.2)
+        ahk.key_press('Escape')
 
 
 def calc_initial_coordinates(cap):
@@ -87,16 +92,17 @@ def calc_initial_coordinates(cap):
 
 def make_main_window(pos, start_value):
     emoji = sg.Text(start_value, font='Helvetica 40', enable_events=True)
-    main_layout = [
-        [sg.Image(filename='', key='image')],
-        [sg.Button('Minimize', size=(10, 1), font='Helvetica 14')]
-    ]
 
     if is_windows:
         main_layout = [
             [sg.Image(filename='', key='image')],
             [sg.Button('Minimize', size=(10, 1), font='Helvetica 14'),
              emoji]
+        ]
+    else:
+        main_layout = [
+            [sg.Image(filename='', key='image')],
+            [sg.Button('Minimize', size=(10, 1), font='Helvetica 14')]
         ]
 
     return emoji, sg.Window('Gesture control', main_layout, location=pos, finalize=True)
@@ -108,6 +114,18 @@ def make_mini_window(pos, start_value):
     return emoji, sg.Window('Gesture control', mini_layout, location=pos, alpha_channel=.7,
                             background_color=None, grab_anywhere=False, no_titlebar=True,
                             keep_on_top=True, finalize=True)
+
+
+def make_windows(pos_main, pos_mini, start_emoji):
+    main_emoji, main_window = make_main_window(pos_main, start_emoji)
+    mini_emoji, mini_window = make_mini_window(pos_mini, start_emoji)
+
+    if is_windows:
+        emojis = [main_emoji, mini_emoji]
+    else:
+        emojis = [mini_emoji]
+
+    return main_window, mini_window, emojis
 
 
 def update_emojis(emojis, type):
@@ -124,20 +142,12 @@ def main():
         min_detection_confidence=0.7, min_tracking_confidence=0.7)
 
     # calc initial window position
-
     pos_main, pos_mini = calc_initial_coordinates(cap)
 
-    # create main window
-    main_emoji, main_window = make_main_window(pos_main, emoji_list['idle'])
-
-    # create mini window
-    emoji, mini_window = make_mini_window(pos_mini, emoji_list['idle'])
+    # create windows
+    main_window, mini_window, emojis = make_windows(
+        pos_main, pos_mini, emoji_list['idle'])
     mini_window.Hide()
-
-    if is_windows:
-        emojis = [main_emoji, emoji]
-    else:
-        emojis = [emoji]
 
     # loop variables
     isMinimized = False
@@ -197,8 +207,7 @@ def main():
 
                         if cnt_x == threshold_middleduration:
                             #winsound.PlaySound("nudge", winsound.SND_ALIAS|winsound.SND_ASYNC)
-                            if is_windows:
-                                play_sound(1)
+                            play_sound(1)
                             update_emojis(emojis, 'detecting')
 
                     elif cnt_x > threshold_middleduration:
@@ -208,24 +217,21 @@ def main():
                             # main_emoji.Update(value=emoji_list['right'])
                             update_emojis(emojis, 'right')
 
-                            if is_windows:
-                                winRight()
+                            winRight()
                         if mcp_middle_finger.x <= middle_left:
                             print('###########LEFT###########')
                             # emoji.Update(value=emoji_list['left'])
                             # main_emoji.Update(value=emoji_list['left'])
                             update_emojis(emojis, 'left')
 
-                            if is_windows:
-                                winLeft()
+                            winLeft()
                         cnt_x = 0
 
                     if mcp_middle_finger.y > middle_up and mcp_middle_finger.y < middle_bottom:
                         cnt_y += 1
 
                         if cnt_y == threshold_middleduration:
-                            if is_windows:
-                                play_sound(2)
+                            play_sound(2)
                             # emoji.Update(value=emoji_list['detecting'])
                             # main_emoji.Update(value=emoji_list['detecting'])
                             update_emojis(emojis, 'detecting')
@@ -237,16 +243,14 @@ def main():
                             # main_emoji.Update(value=emoji_list['up'])
                             update_emojis(emojis, 'up')
 
-                            if is_windows:
-                                winUp()
+                            winUp()
                         if mcp_middle_finger.y >= middle_bottom:
                             print('###########DOWN###########')
                             # emoji.Update(value=emoji_list['down'])
                             # main_emoji.Update(value=emoji_list['down'])
                             update_emojis(emojis, 'down')
 
-                            if is_windows:
-                                winDown()
+                            winDown()
                         cnt_y = 0
                 else:
                     cnt_none += 1
@@ -256,8 +260,7 @@ def main():
                         # main_emoji.Update(value=emoji_list['cancel'])
                         update_emojis(emojis, 'cancel')
 
-                        if is_windows:
-                            play_sound(3)
+                        play_sound(3)
                     cnt_x = 0
                     cnt_y = 0
 
@@ -270,8 +273,7 @@ def main():
                 cnt_none += 1
                 if cnt_none == 3:
                     if cnt_x > 0 or cnt_y > 0:
-                        if is_windows:
-                            play_sound(3)
+                        play_sound(3)
                         # emoji.Update(value=emoji_list['cancel'])
                         # main_emoji.Update(value=emoji_list['cancel'])
                         update_emojis(emojis, 'cancel')
