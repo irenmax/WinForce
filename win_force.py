@@ -39,7 +39,7 @@ emoji_list = {
 def play_sound(sound):
     #winsound.PlaySound(soundfile, winsound.SND_FILENAME|winsound.SND_ASYNC)
     winsound.PlaySound(
-        soundpath + soundfiles[sound], winsound.SND_ALIAS | winsound.SND_ASYNC)
+        soundpath + soundfiles[sound - 1], winsound.SND_ALIAS | winsound.SND_ASYNC)
 
 
 def winRight():
