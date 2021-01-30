@@ -120,38 +120,47 @@ def main():
                 
                 #wrist = landmarklist.landmark[0]
                 mcp_middle_finger = landmarklist.landmark[9]
+                tip_middle_finger = landmarklist.landmark[12]
 
-                # hand is approx. in the middle of the image
-                # check left or right 
-                if mcp_middle_finger.x > middle_left and mcp_middle_finger.x < middle_right:
-                  cnt_x += 1
+                # fist should cancel
+                if tip_middle_finger.y < mcp_middle_finger.y:
+                  # hand is approx. in the middle of the image
+                  # check left or right 
+                  if mcp_middle_finger.x > middle_left and mcp_middle_finger.x < middle_right:
+                    cnt_x += 1
 
-                  if cnt_x == threshold_middleduration:
-                    #winsound.PlaySound("nudge", winsound.SND_ALIAS|winsound.SND_ASYNC)
-                    play_sound(1)
-                                  
-                elif cnt_x > threshold_middleduration:
-                  if mcp_middle_finger.x >= middle_right:
-                    print('###########RIGHT###########')
-                    winRight()
-                  if mcp_middle_finger.x <= middle_left:
-                    print('###########LEFT###########')
-                    winLeft()
+                    if cnt_x == threshold_middleduration:
+                      #winsound.PlaySound("nudge", winsound.SND_ALIAS|winsound.SND_ASYNC)
+                      play_sound(1)
+                                    
+                  elif cnt_x > threshold_middleduration:
+                    if mcp_middle_finger.x >= middle_right:
+                      print('###########RIGHT###########')
+                      winRight()
+                    if mcp_middle_finger.x <= middle_left:
+                      print('###########LEFT###########')
+                      winLeft()
+                    cnt_x = 0
+
+                  if mcp_middle_finger.y > middle_up and mcp_middle_finger.y < middle_bottom:
+                    cnt_y += 1
+                    
+                    if cnt_y == threshold_middleduration:
+                      play_sound(2)
+
+                  elif cnt_y > threshold_middleduration:
+                    if mcp_middle_finger.y <= middle_up:
+                      print('###########UP###########')
+                      winUp()
+                    if mcp_middle_finger.y >= middle_bottom:
+                      print('###########DOWN###########')
+                      winDown()
+                    cnt_y = 0
+                else: 
+                  print('!!!!!!!!!!!! C A N C E L !!!!!!!!!!!!!!!!')
+                  if cnt_x > 0 or cnt_y > 0:
+                    play_sound(3)
                   cnt_x = 0
-
-                if mcp_middle_finger.y > middle_up and mcp_middle_finger.y < middle_bottom:
-                  cnt_y += 1
-                  
-                  if cnt_y == threshold_middleduration:
-                    play_sound(2)
-
-                elif cnt_y > threshold_middleduration:
-                  if mcp_middle_finger.y <= middle_up:
-                    print('###########UP###########')
-                    winUp()
-                  if mcp_middle_finger.y >= middle_bottom:
-                    print('###########DOWN###########')
-                    winDown()
                   cnt_y = 0
 
                   
