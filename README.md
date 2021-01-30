@@ -2,7 +2,8 @@
 Gesture window control for PR Building Interaction Interfaces
 
 # Dependencies
-- The application only runs on Windows
+- the application only works on Windows
+- other platforms are supported, but cannot move windows
 - Python 3.8
 - [Autohotkey](https://www.autohotkey.com/)
 - Python packages
