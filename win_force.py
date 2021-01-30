@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import platform
 import time
-from threading import Thread
+from _thread import start_new_thread
 import numpy as np
 import cv2
 import mediapipe as mp
@@ -9,6 +9,7 @@ import PySimpleGUI as sg
 mp_drawing = mp.solutions.drawing_utils
 mp_hands = mp.solutions.hands
 
+# import windows specific libraries
 is_windows = platform.system() == 'Windows'
 if is_windows:
     import winsound
@@ -16,15 +17,34 @@ if is_windows:
     from ahk.window import Window
     ahk = AHK()
 
+    # set sounds for windows
     soundpath = "C:/Windows/Media/"
-    soundfiles = ['chimes.wav', 'ding.wav', 'chord.wav', 'tada.wav']
+    sounds = {
+        '?': 'chimes.wav',
+        'detecting_x': 'ding.wav',
+        'detecting_y': 'chord.wav',
+        'cancel': 'tada.wav'
+    }
+else:
+    # set sounds for other OS
+    import beepy
+    sounds = {
+        '?': 1,
+        'detecting_x': 1,
+        'detecting_y': 4,
+        'cancel': 3
+    }
 
+# global variables
 threshold_middleduration = 3
+threshold_cancleduration = 5
+
 middle_left = 0.3
 middle_right = 0.7
 middle_up = 0.3
 middle_bottom = 0.7
 
+# set emojis
 emoji_list = {
     'idle': '\U0001F440',
     'detecting': '\U0001F44B',
@@ -36,54 +56,96 @@ emoji_list = {
 }
 
 
+# thread for sound in non-windows OS
+def play_beepy_sound(sound):
+    beepy.beep(sounds[sound])
+
+
 def play_sound(sound):
     if is_windows:
-        #winsound.PlaySound(soundfile, winsound.SND_FILENAME|winsound.SND_ASYNC)
+        # play windows sound
         winsound.PlaySound(
-            soundpath + soundfiles[sound - 1], winsound.SND_ALIAS | winsound.SND_ASYNC)
+            soundpath + sounds[sound], winsound.SND_ALIAS | winsound.SND_ASYNC)
+    else:
+        # play beepy sound in separate thread
+        start_new_thread(play_beepy_sound, (sound,))
 
 
-def winRight():
+def winRight(emojis):
+    print('########### RIGHT ###########')
+    update_emojis(emojis, 'right')
+
     if is_windows:
-        #win = ahk.active_window
-        #win.move(x=1920, y=0, width=1920, height=2160)
+        # move window
         ahk.send_input('{LWin Down}{Right}{LWin Up}')
         time.sleep(0.2)
         ahk.key_press('Escape')
 
 
-def winLeft():
+def winLeft(emojis):
+    print('########### LEFT ###########')
+    update_emojis(emojis, 'left')
+
     if is_windows:
-        #win = ahk.active_window
-        #win.move(x=0, y=0, width=1920, height=2160)
+        # move window
         ahk.send_input('{LWin Down}{Left}{LWin Up}')
         time.sleep(0.2)
         ahk.key_press('Escape')
 
 
-def winUp():
+def winUp(emojis):
+    print('########### UP ###########')
+    update_emojis(emojis, 'up')
+
     if is_windows:
+        # move window
         ahk.send_input('{LWin Down}{Up}{LWin Up}')
         time.sleep(0.2)
         ahk.key_press('Escape')
 
 
-def winDown():
+def winDown(emojis):
+    print('########### DOWN ###########')
+    update_emojis(emojis, 'down')
+
     if is_windows:
+        # move window
         ahk.send_input('{LWin Down}{Down}{LWin Up}')
         time.sleep(0.2)
         ahk.key_press('Escape')
 
 
+def cancel(emojis):
+    print('!!!!!!!!!!!! C A N C E L !!!!!!!!!!!!!!!!')
+    update_emojis(emojis, 'cancel')
+    play_sound('cancel')
+
+
+def detecting(emojis, direction):
+    # play sound according to direction
+    update_emojis(emojis, 'detecting')
+    if direction == 'vertical':
+        play_sound('detecting_y')
+    elif direction == 'horizontal':
+        play_sound('detecting_x')
+
+
+def idle(emojis):
+    update_emojis(emojis, 'idle')
+
+
 def calc_initial_coordinates(cap):
+    # read campera input to get size
     _, image = cap.read()
     window_height, window_width, _ = image.shape
+    # get screen size
     screen_width, screen_height = sg.Window.get_screen_size()
 
+    # calculate position for main window
     x_main = screen_width / 2 - window_width / 2
-    # y_main = screen_height / 2 - window_height / 2
-    y_main = 0
+    y_main = 20
 
+    # calculate position for mini window
     x_mini = screen_width - 95
     y_mini = screen_height - 110
 
@@ -93,11 +155,14 @@ def calc_initial_coordinates(cap):
 def make_main_window(pos, start_value):
     emoji = sg.Text(start_value, font='Helvetica 40', enable_events=True)
 
+    # add emoji to main window only for windows
     if is_windows:
         main_layout = [
             [sg.Image(filename='', key='image')],
-            [sg.Button('Minimize', size=(10, 1), font='Helvetica 14'),
-             emoji]
+            [
+                sg.Button('Minimize', size=(10, 1), font='Helvetica 14'),
+                emoji
+            ]
         ]
     else:
         main_layout = [
@@ -105,21 +170,25 @@ def make_main_window(pos, start_value):
             [sg.Button('Minimize', size=(10, 1), font='Helvetica 14')]
         ]
 
-    return emoji, sg.Window('Gesture control', main_layout, location=pos, finalize=True)
+    return emoji, sg.Window('win force', main_layout, location=pos, finalize=True)
 
 
 def make_mini_window(pos, start_value):
     emoji = sg.Text(start_value, font='Helvetica 40', enable_events=True)
     mini_layout = [[emoji]]
-    return emoji, sg.Window('Gesture control', mini_layout, location=pos, alpha_channel=.7,
+    return emoji, sg.Window('win force', mini_layout, location=pos, alpha_channel=.7,
                             background_color=None, grab_anywhere=False, no_titlebar=True,
                             keep_on_top=True, finalize=True)
 
 
 def make_windows(pos_main, pos_mini, start_emoji):
+    # create main window
     main_emoji, main_window = make_main_window(pos_main, start_emoji)
+
+    # create mini window
     mini_emoji, mini_window = make_mini_window(pos_mini, start_emoji)
 
+    # list of emojis contains only mini_emoji if not windows
     if is_windows:
         emojis = [main_emoji, mini_emoji]
     else:
@@ -129,6 +198,7 @@ def make_windows(pos_main, pos_mini, start_emoji):
 
 
 def update_emojis(emojis, type):
+    # update all emojis in list
     for emoji in emojis:
         emoji.Update(value=emoji_list[type])
 
@@ -160,6 +230,7 @@ def main():
         # read windows
         _, event, values = sg.read_all_windows(timeout=20)
 
+        # handle events
         if event == sg.WIN_CLOSED:
             hands.close()
             cap.release()
@@ -173,123 +244,118 @@ def main():
             mini_window.Hide()
             main_window.UnHide()
 
+        # get camera image
         ret, image = cap.read()
         framecounter += 1
-        # Flip the image horizontally for a later selfie-view display, and convert
-        # the BGR image to RGB.
+
+        # flip image and convert colors
         image = cv2.cvtColor(cv2.flip(image, 1), cv2.COLOR_BGR2RGB)
-        # To improve performance, optionally mark the image as not writeable to
-        # pass by reference.
-        # result contains landmarks of hands and classification if hand is left or right
+
+        # performance improvement
         image.flags.writeable = False
+
+        # get hand positions
         results = hands.process(image)
 
         # GESTURE RECOGNITION
-        # we look at hand position every fourth frame for efficiency
+        # detect hand in every second frame
         if framecounter % 2 == 0:
             is_detecting_hand = results.multi_hand_landmarks
 
+            # if hands found
             if is_detecting_hand:
-
                 landmarklist = results.multi_hand_landmarks[0]
 
-                #wrist = landmarklist.landmark[0]
+                # get middle finger knuckle and tip
                 mcp_middle_finger = landmarklist.landmark[9]
                 tip_middle_finger = landmarklist.landmark[12]
 
-                # fist should cancel
+                # if hand is not a fist
                 if tip_middle_finger.y < mcp_middle_finger.y:
                     cnt_none = 0
-                    # hand is approx. in the middle of the image
-                    # check left or right
-                    if mcp_middle_finger.x > middle_left and mcp_middle_finger.x < middle_right:
+
+                    is_horizontally_centered = mcp_middle_finger.x > middle_left and mcp_middle_finger.x < middle_right
+                    is_vertically_centered = mcp_middle_finger.y > middle_up and mcp_middle_finger.y < middle_bottom
+
+                    # if hand is horizontally in the center
+                    if is_horizontally_centered:
                         cnt_x += 1
 
                         if cnt_x == threshold_middleduration:
-                            #winsound.PlaySound("nudge", winsound.SND_ALIAS|winsound.SND_ASYNC)
-                            play_sound(1)
-                            update_emojis(emojis, 'detecting')
+                            # set emojis and play sound
+                            detecting(emojis, 'horizontal')
 
-                    elif cnt_x > threshold_middleduration:
+                    # if hand moved away from center
+                    elif cnt_x >= threshold_middleduration:
                         if mcp_middle_finger.x >= middle_right:
-                            print('###########RIGHT###########')
-                            # emoji.Update(value=emoji_list['right'])
-                            # main_emoji.Update(value=emoji_list['right'])
-                            update_emojis(emojis, 'right')
-
-                            winRight()
+                            # move window, set emojis and play sound
+                            winRight(emojis)
                         if mcp_middle_finger.x <= middle_left:
-                            print('###########LEFT###########')
-                            # emoji.Update(value=emoji_list['left'])
-                            # main_emoji.Update(value=emoji_list['left'])
-                            update_emojis(emojis, 'left')
+                            # move window, set emojis and play sound
+                            winLeft(emojis)
 
-                            winLeft()
                         cnt_x = 0
 
-                    if mcp_middle_finger.y > middle_up and mcp_middle_finger.y < middle_bottom:
+                    # if hand is vertically in the center
+                    if is_vertically_centered:
                         cnt_y += 1
 
-                        if cnt_y == threshold_middleduration:
-                            play_sound(2)
-                            # emoji.Update(value=emoji_list['detecting'])
-                            # main_emoji.Update(value=emoji_list['detecting'])
-                            update_emojis(emojis, 'detecting')
+                        # execute only if horizontalls has not been executed
+                        if cnt_y == threshold_middleduration and not is_horizontally_centered:
+                            # move window, set emojis and play sound
+                            detecting(emojis, 'vertical')
 
+                    # if hand moved away from center
                     elif cnt_y > threshold_middleduration:
                         if mcp_middle_finger.y <= middle_up:
-                            print('###########UP###########')
-                            # emoji.Update(value=emoji_list['up'])
-                            # main_emoji.Update(value=emoji_list['up'])
-                            update_emojis(emojis, 'up')
-
-                            winUp()
+                            # move window, set emojis and play sound
+                            winUp(emojis)
                         if mcp_middle_finger.y >= middle_bottom:
-                            print('###########DOWN###########')
-                            # emoji.Update(value=emoji_list['down'])
-                            # main_emoji.Update(value=emoji_list['down'])
-                            update_emojis(emojis, 'down')
+                            # move window, set emojis and play sound
+                            winDown(emojis)
 
-                            winDown()
                         cnt_y = 0
+
+                # if hand is a fist
                 else:
                     cnt_none += 1
-                    if cnt_x > 0 or cnt_y > 0:
-                        print('!!!!!!!!!!!! C A N C E L !!!!!!!!!!!!!!!!')
-                        # emoji.Update(value=emoji_list['cancel'])
-                        # main_emoji.Update(value=emoji_list['cancel'])
-                        update_emojis(emojis, 'cancel')
 
-                        play_sound(3)
+                    # if hand has been detected before
+                    if cnt_x > 0 or cnt_y > 0:
+                        # set emojis and play sound
+                        cancel(emojis)
                     cnt_x = 0
                     cnt_y = 0
 
                     if cnt_none == 7:
-                        # emoji.Update(value=emoji_list['idle'])
-                        # main_emoji.Update(value=emoji_list['idle'])
-                        update_emojis(emojis, 'idle')
+                        # set emojis
+                        idle(emojis)
 
+            # if no hands found
             else:
                 cnt_none += 1
-                if cnt_none == 3:
+                if cnt_none == threshold_cancleduration:
+
+                    # if hand has been detected before
                     if cnt_x > 0 or cnt_y > 0:
-                        play_sound(3)
-                        # emoji.Update(value=emoji_list['cancel'])
-                        # main_emoji.Update(value=emoji_list['cancel'])
-                        update_emojis(emojis, 'cancel')
+                        # set emojis and play sound
+                        cancel(emojis)
 
                     cnt_x = 0
                     cnt_y = 0
-                elif cnt_none == 10:
-                    # emoji.Update(value=emoji_list['idle'])
-                    # main_emoji.Update(value=emoji_list['idle'])
-                    update_emojis(emojis, 'idle')
 
+                elif cnt_none == threshold_cancleduration + 7:
+                    # set emojis
+                    idle(emojis)
+
+            # log current counters
             print(cnt_x, cnt_y, cnt_none)
 
-        # Draw the hand annotations on the image.
+        # convert colors back
         image.flags.writeable = True
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+
+        # make grid lines
         height = image.shape[0]
         width = image.shape[1]
         color = (255, 0, 0)
@@ -310,14 +376,17 @@ def main():
         image = cv2.line(image, (0, lower_y),
                          (width, lower_y), color, thickness)
 
+        # draw hands on image
         if results.multi_hand_landmarks:
             for hand_landmarks in results.multi_hand_landmarks:
                 mp_drawing.draw_landmarks(
                     image, hand_landmarks, mp_hands.HAND_CONNECTIONS)
 
+        # convert image to bytes and render in window
         imgbytes = cv2.imencode('.png', image)[1].tobytes()
         main_window['image'].update(data=imgbytes)
 
+    # destroy
     hands.close()
     cap.release()
 
