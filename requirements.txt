@@ -1,0 +1,17 @@
+absl-py==0.11.0
+ahk==0.12.0
+beepy==1.0.7
+certifi==2020.12.5
+dataclasses==0.6
+Jinja2==2.11.2
+MarkupSafe==1.1.1
+mediapipe==0.8.2
+mkl-fft==1.2.0
+mkl-random==1.1.1
+mkl-service==2.3.0
+numpy==1.19.3
+opencv-python==4.5.1.48
+protobuf==3.14.0
+PySimpleGUI==4.34.0
+simpleaudio==1.0.4
+six @ file:///opt/concourse/worker/volumes/live/5b31cb27-1e37-4ca5-6e9f-86246eb206d2/volume/six_1605205320872/work
