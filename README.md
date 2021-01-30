@@ -11,7 +11,7 @@ Gesture window control for PR Building Interaction Interfaces
   - opencv-python
 
 # Run the Application 
-- run `python win_force.py'
+- run `python win_force.py`
 - click on 'minimize' to close the big window, in the lower right corner the emoji indicator appears
 - a click on the miniature window in the lower right corner will open the big window again
 
