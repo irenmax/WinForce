@@ -20,16 +20,14 @@ if is_windows:
     # set sounds for windows
     soundpath = "C:/Windows/Media/"
     sounds = {
-        '?': 'chimes.wav',
-        'detecting_x': 'ding.wav',
-        'detecting_y': 'chord.wav',
-        'cancel': 'tada.wav'
+        'detecting_x': 'chimes.wav',
+        'detecting_y': 'ding.wav',
+        'cancel': 'chord.wav',
     }
 else:
     # set sounds for other OS
     import beepy
     sounds = {
-        '?': 1,
         'detecting_x': 1,
         'detecting_y': 4,
         'cancel': 3

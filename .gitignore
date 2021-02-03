@@ -392,3 +392,7 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.toptal.com/developers/gitignore/api/python,macos,windows,intellij,pycharm,vscode,linux
+.idea/bii-gesture-control.iml
+.idea/misc.xml
+.idea/modules.xml
+.idea/vcs.xml
