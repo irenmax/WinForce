@@ -168,7 +168,7 @@ def make_main_window(pos, start_value):
             [sg.Button('Minimize', size=(10, 1), font='Helvetica 14')]
         ]
 
-    return emoji, sg.Window('win force', main_layout, location=pos, finalize=True)
+    return emoji, sg.Window('win force', main_layout, location=pos, finalize=True, keep_on_top=True)
 
 
 def make_mini_window(pos, start_value):

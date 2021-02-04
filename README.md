@@ -1,5 +1,8 @@
-# bii-gesture-control
-Gesture window control for PR Building Interaction Interfaces
+# WinForce
+With WinForce you can move your windows on your screen like a Jedi. It uses to [Google MediaPipe](https://github.com/google/mediapipe) detect the hand, swipe gestures to the left, right, up or down move the active window accordingly - similar to winkey + arrowkeys.  
+This project was created for the course *Building Interaction Inferfaces at TU Wien*.
+
+![WinForce demo](examples/winforce_demo.gif)
 
 # Dependencies
 - the application only works on Windows
@@ -12,10 +15,15 @@ Gesture window control for PR Building Interaction Interfaces
   - mediapipe
   - opencv-python
 
-# Run the Application 
+# Run the Application
 - run `python win_force.py`
 - click on 'minimize' to close the big window, in the lower right corner the emoji indicator appears
 - a click on the miniature window in the lower right corner will open the big window again
+
+Application screen with displayed camera input  | Miniature indicator with application running in the background
+--|--
+![WinForce full](examples/winforce_full.png "The WinForce application with camera input and handtracking")  |  ![WinForce Miniature](examples/winforce_miniature.png "The WinForce miniature gesture indicator")
+
 
 # Detected gestures
 - move your hand to the middle of the x or y axis
