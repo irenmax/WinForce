@@ -180,7 +180,7 @@ def make_main_window(pos, start_value):
             ]
         ]
 
-    return emoji, mute, sg.Window('win force', main_layout, location=pos, finalize=True)
+    return emoji, mute, sg.Window('win force', main_layout, location=pos, finalize=True, keep_on_top=True)
 
 
 def make_mini_window(pos, start_value):
