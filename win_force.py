@@ -53,20 +53,27 @@ emoji_list = {
     'cancel': '\U0000274C'
 }
 
+# list for mute icons
+mute_list = {
+    'unmute': '\U0001f508',
+    'mute': '\U0001F507'
+}
 
-# thread for sound in non-windows OS
+
 def play_beepy_sound(sound):
+    # thread for sound in non-windows OS
     beepy.beep(sounds[sound])
 
 
-def play_sound(sound):
-    if is_windows:
-        # play windows sound
-        winsound.PlaySound(
-            soundpath + sounds[sound], winsound.SND_ALIAS | winsound.SND_ASYNC)
-    else:
-        # play beepy sound in separate thread
-        start_new_thread(play_beepy_sound, (sound,))
+def play_sound(sound, isMuted):
+    if not isMuted:
+        if is_windows:
+            # play windows sound
+            winsound.PlaySound(
+                soundpath + sounds[sound], winsound.SND_ALIAS | winsound.SND_ASYNC)
+        else:
+            # play beepy sound in separate thread
+            start_new_thread(play_beepy_sound, (sound,))
 
 
 def winRight(emojis):
@@ -113,19 +120,19 @@ def winDown(emojis):
         ahk.key_press('Escape')
 
 
-def cancel(emojis):
+def cancel(emojis, isMuted):
     print('!!!!!!!!!!!! C A N C E L !!!!!!!!!!!!!!!!')
     update_emojis(emojis, 'cancel')
-    play_sound('cancel')
+    play_sound('cancel', isMuted)
 
 
-def detecting(emojis, direction):
+def detecting(emojis, direction, isMuted):
     # play sound according to direction
     update_emojis(emojis, 'detecting')
     if direction == 'vertical':
-        play_sound('detecting_y')
+        play_sound('detecting_y', isMuted)
     elif direction == 'horizontal':
-        play_sound('detecting_x')
+        play_sound('detecting_x', isMuted)
 
 
 def idle(emojis):
@@ -152,6 +159,7 @@ def calc_initial_coordinates(cap):
 
 def make_main_window(pos, start_value):
     emoji = sg.Text(start_value, font='Helvetica 40', enable_events=True)
+    mute = sg.Button(mute_list['mute'], size=(3, 1), font='Helvetica 14')
 
     # add emoji to main window only for windows
     if is_windows:
@@ -159,16 +167,20 @@ def make_main_window(pos, start_value):
             [sg.Image(filename='', key='image')],
             [
                 sg.Button('Minimize', size=(10, 1), font='Helvetica 14'),
+                mute,
                 emoji
             ]
         ]
     else:
         main_layout = [
             [sg.Image(filename='', key='image')],
-            [sg.Button('Minimize', size=(10, 1), font='Helvetica 14')]
+            [
+                sg.Button('Minimize', size=(10, 1), font='Helvetica 14'),
+                mute,
+            ]
         ]
 
-    return emoji, sg.Window('win force', main_layout, location=pos, finalize=True)
+    return emoji, mute, sg.Window('win force', main_layout, location=pos, finalize=True)
 
 
 def make_mini_window(pos, start_value):
@@ -181,7 +193,7 @@ def make_mini_window(pos, start_value):
 
 def make_windows(pos_main, pos_mini, start_emoji):
     # create main window
-    main_emoji, main_window = make_main_window(pos_main, start_emoji)
+    main_emoji, mute_btn, main_window = make_main_window(pos_main, start_emoji)
 
     # create mini window
     mini_emoji, mini_window = make_mini_window(pos_mini, start_emoji)
@@ -192,13 +204,21 @@ def make_windows(pos_main, pos_mini, start_emoji):
     else:
         emojis = [mini_emoji]
 
-    return main_window, mini_window, emojis
+    return main_window, mini_window, emojis, mute_btn
 
 
 def update_emojis(emojis, type):
     # update all emojis in list
     for emoji in emojis:
         emoji.Update(value=emoji_list[type])
+
+
+def toggleMute(isMuted, mute_btn):
+    if isMuted:
+        mute_btn.Update(mute_list['mute'])
+    else:
+        mute_btn.Update(mute_list['unmute'])
+    return not isMuted
 
 
 def main():
@@ -213,12 +233,13 @@ def main():
     pos_main, pos_mini = calc_initial_coordinates(cap)
 
     # create windows
-    main_window, mini_window, emojis = make_windows(
+    main_window, mini_window, emojis, mute_btn = make_windows(
         pos_main, pos_mini, emoji_list['idle'])
     mini_window.Hide()
 
     # loop variables
     isMinimized = False
+    isMuted = False
     framecounter = 0
     cnt_x = 0
     cnt_y = 0
@@ -237,6 +258,9 @@ def main():
         elif event == 'Minimize':
             main_window.Hide()
             mini_window.UnHide()
+
+        elif event in mute_list.values():
+            isMuted = toggleMute(isMuted, mute_btn)
 
         elif event in emoji_list.values():
             mini_window.Hide()
@@ -281,7 +305,7 @@ def main():
 
                         if cnt_x == threshold_middleduration:
                             # set emojis and play sound
-                            detecting(emojis, 'horizontal')
+                            detecting(emojis, 'horizontal', isMuted)
 
                     # if hand moved away from center
                     elif cnt_x >= threshold_middleduration:
@@ -301,7 +325,7 @@ def main():
                         # execute only if horizontalls has not been executed
                         if cnt_y == threshold_middleduration and not is_horizontally_centered:
                             # move window, set emojis and play sound
-                            detecting(emojis, 'vertical')
+                            detecting(emojis, 'vertical', isMuted)
 
                     # if hand moved away from center
                     elif cnt_y > threshold_middleduration:
@@ -321,7 +345,7 @@ def main():
                     # if hand has been detected before
                     if cnt_x > 0 or cnt_y > 0:
                         # set emojis and play sound
-                        cancel(emojis)
+                        cancel(emojis, isMuted)
                     cnt_x = 0
                     cnt_y = 0
 
@@ -337,7 +361,7 @@ def main():
                     # if hand has been detected before
                     if cnt_x > 0 or cnt_y > 0:
                         # set emojis and play sound
-                        cancel(emojis)
+                        cancel(emojis, isMuted)
 
                     cnt_x = 0
                     cnt_y = 0
