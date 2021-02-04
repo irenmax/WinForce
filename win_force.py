@@ -55,8 +55,8 @@ emoji_list = {
 
 # list for mute icons
 mute_list = {
-    'unmute': '\U0001f508',
-    'mute': '\U0001F507'
+    'unmute': '\U0001F514',
+    'mute': '\U0001F515'
 }
 
 
